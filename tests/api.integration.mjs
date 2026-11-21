@@ -5,12 +5,14 @@ import { mkdtempSync, readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { buildReport } from '../frontend/js/services/reports.js';
 import { browserSmoke } from './browser-smoke.mjs';
+import { stopServer } from './stop-server.mjs';
+import { freePort } from './free-port.mjs';
 
 // Explicit integration command; uses its own database, never the user's records.
 test('API PHP y PostgreSQL: CRUD, reservas, rollback, reportes y persistencia', { timeout: 120000 }, async () => {
   const runtime = mkdtempSync(resolve('tmp/integration-'));
-  const port = 5187;
-  const env = { ...process.env, APP_RUNTIME:runtime, APP_MANAGED_DATABASE:'1', PG_PORT:'55487', PORT:String(port) };
+  const port = Number(process.env.TEST_HTTP_PORT || await freePort());
+  const env = { ...process.env, APP_RUNTIME:runtime, APP_MANAGED_DATABASE:'1', PG_PORT:String(process.env.TEST_PG_PORT || await freePort()), PORT:String(port) };
   const server = spawn(process.execPath, ['scripts/serve.mjs'], {env,windowsHide:true,stdio:['ignore','pipe','pipe']});
   let log = '';
   server.stdout.on('data', data => { log += data; }); server.stderr.on('data', data => { log += data; });
@@ -105,8 +107,8 @@ test('API PHP y PostgreSQL: CRUD, reservas, rollback, reportes y persistencia', 
       await browserSmoke(base,nextLot,connection);
     }
   } finally {
-    server.kill();
     const pgBin = process.env.PG_BIN || 'D:/PostgreSQL/bin';
     spawnSync(resolve(pgBin,'pg_ctl.exe'),['-D',resolve(runtime,'postgres'),'-m','fast','-w','stop'],{windowsHide:true,timeout:10000,stdio:'ignore'});
+    stopServer(server);
   }
 });

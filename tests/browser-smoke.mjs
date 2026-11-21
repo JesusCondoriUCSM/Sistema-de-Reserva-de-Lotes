@@ -2,16 +2,19 @@ import { spawn } from 'node:child_process';
 import { mkdtempSync, writeFileSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import assert from 'node:assert/strict';
+import { usageFlows } from './usage-flows.mjs';
+import { freePort } from './free-port.mjs';
 
 export async function browserSmoke(base, lotId, connection, expectedNote = 'NV01-000001') {
   mkdirSync(resolve('tmp'), {recursive:true});
   const profile = mkdtempSync(resolve('tmp/browser-'));
-  const chrome = spawn(process.env.CHROME_BIN || (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe' : 'google-chrome'), ['--headless','--no-sandbox','--disable-gpu','--no-first-run','--remote-debugging-port=9227',`--user-data-dir=${profile}`,'about:blank'], {windowsHide:true,stdio:'ignore'});
+  const debugPort=await freePort();
+  const chrome = spawn(process.env.CHROME_BIN || (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe' : 'google-chrome'), ['--headless','--no-sandbox','--disable-gpu','--no-first-run',`--remote-debugging-port=${debugPort}`,`--user-data-dir=${profile}`,'about:blank'], {windowsHide:true,stdio:'ignore'});
   let socket;
   try {
     let pages;
     for(let i=0;i<100;i++) {
-      try { pages = await (await fetch('http://127.0.0.1:9227/json/list')).json(); if(pages.length) break; } catch {}
+      try { pages = await (await fetch(`http://127.0.0.1:${debugPort}/json/list`)).json(); if(pages.length) break; } catch {}
       await new Promise(r=>setTimeout(r,100));
     }
     assert.ok(pages?.length,'Chrome no disponible');
@@ -86,6 +89,8 @@ export async function browserSmoke(base, lotId, connection, expectedNote = 'NV01
     await evaluate("document.querySelector('#modal form').requestSubmit()");
     await wait("document.querySelector('h1')?.textContent==='Detalle de nota de venta'");
     assert.equal(await evaluate(`document.querySelector('main').innerText.includes(${JSON.stringify(expectedNote)})`),true);
+    await send('Emulation.setDeviceMetricsOverride',{width:1366,height:768,deviceScaleFactor:1,mobile:false});
+    await usageFlows({evaluate,wait,lotId,expectedNote});
     await send('Emulation.setDeviceMetricsOverride',{width:390,height:844,deviceScaleFactor:1,mobile:true});
     await evaluate("location.hash='/inicio'");
     await wait("document.querySelector('h1')?.textContent==='Inicio'");

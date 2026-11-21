@@ -3,13 +3,15 @@ import assert from 'node:assert/strict';
 import { spawn, spawnSync } from 'node:child_process';
 import { mkdtempSync,readFileSync,writeFileSync,existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { stopServer } from './stop-server.mjs';
+import { freePort } from './free-port.mjs';
 
 const localSeed=resolve('.docker/seed-demo.sql');
 for(const seeded of [false,...(existsSync(localSeed)?[true]:[])]) {
 test(`SQL de Docker: ${seeded?'datos solo locales':'base vacia'}, permisos y conexion automatica`, {timeout:120000}, async()=>{
-  const dbPort=seeded?'55489':'55488';
-  const port=seeded?'5190':'5188';
-  const managedPort=seeded?'5191':'5189';
+  const dbPort=String(await freePort());
+  const port=String(await freePort());
+  const managedPort=String(await freePort());
   const base='http://127.0.0.1:'+port;
   const managedBase='http://127.0.0.1:'+managedPort;
   const runtime=mkdtempSync(resolve('tmp/docker-seed-'));
@@ -60,8 +62,9 @@ test(`SQL de Docker: ${seeded?'datos solo locales':'base vacia'}, permisos y con
       assert.equal(browser.status,0,browser.stdout+browser.stderr);
     }
   }finally{
-    managed?.kill();server.kill();
+    stopServer(managed);
     spawnSync(resolve(pg,'pg_ctl.exe'),['-D',resolve(runtime,'postgres'),'-m','fast','-w','stop'],{windowsHide:true,timeout:10000,stdio:'ignore'});
+    stopServer(server);
   }
 });
 
