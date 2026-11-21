@@ -5,7 +5,8 @@ import { repository } from './services/repository.js';
 const routes = {
   inicio: ['Inicio', 'home', 'dashboard'], proyectos: ['Proyectos', 'grid', 'projects'],
   lotes: ['Lotes', 'grid', 'lots'], clientes: ['Clientes', 'users', 'clients'],
-  asesores: ['Asesores', 'users', 'advisors'], catalogos: ['Catálogos', 'grid', 'catalogs']
+  asesores: ['Asesores', 'users', 'advisors'], separaciones: ['Separaciones', 'note', 'reservations'],
+  catalogos: ['Catálogos', 'grid', 'catalogs']
 };
 const app = document.getElementById('app');
 app.innerHTML = `<div class="demo-bar"><span class="dot"></span><strong>Entorno de demostración</strong><span>Datos ficticios · Sin conexión a PostgreSQL</span></div><div class="shell"><aside class="sidebar" id="sidebar"><a href="#/inicio" class="brand"><strong>Villa Horizonte</strong><small>Inmobiliaria · Gestión<br>interna</small></a><div class="menu-label">MENÚ PRINCIPAL</div><nav class="nav" aria-label="Menú principal">${Object.entries(routes).map(([key, [name, symbol]]) => `<a href="#/${key}" data-route="${key}">${icon(symbol)}<span>${name}</span></a>`).join('')}</nav><div class="sidebar-bottom"><p>Un lugar para gestionar<br>nuevas oportunidades.</p><div class="user"><span class="avatar">VH</span><div>Sesión de demostración<small>Gestión inmobiliaria</small></div></div></div></aside><div class="workspace"><header class="topbar"><button class="btn small mobile-toggle" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">${icon('menu')}</button><div><div class="eyebrow">SISTEMA DE RESERVAS DE LOTES</div><div class="topbar-title" id="topbar-title">Inicio</div></div><span class="date">${icon('clock')}${dateLabel(today())}</span></header><main id="main" class="content" tabindex="-1"></main><footer class="footer"><span>Villa Horizonte · Sistema interno de reservas de lotes</span><span>Frontend · Versión de demostración</span></footer></div></div>`;
