@@ -21,6 +21,23 @@ sh scripts/docker-init.sh
 La conexión se configura automáticamente. No hace falta instalar PHP ni
 PostgreSQL en el equipo. El primer inicio requiere conexión a internet.
 
+## Ejecutable para Windows
+
+El paquete ejecutable incluye `VillaHorizonte.exe` y los archivos del sistema.
+Extraer el ZIP completo, abrir Docker Desktop y ejecutar el archivo .exe. El
+lanzador inicia los servicios y abre el navegador cuando estan disponibles.
+Requiere Docker Desktop y .NET Framework 4.5 o superior; no es un instalador
+independiente de Docker. Las instalaciones nuevas comienzan con la base vacia.
+
+Para compilar el lanzador desde el codigo fuente en Windows:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/build-launcher.ps1
+```
+
+El resultado queda en `dist/VillaHorizonte.exe`. Debe distribuirse junto con
+`compose.yaml`, `frontend/`, `backend/`, `deploy/` y los scripts de arranque.
+
 ## Datos
 
 Las instalaciones nuevas comienzan vacías. Registrar primero ciudades y
