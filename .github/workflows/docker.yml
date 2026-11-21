@@ -1,0 +1,39 @@
+name: Docker y PostgreSQL
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Reglas de negocio
+        run: npm test
+      - name: Construir e iniciar Docker con datos ficticios
+        run: sh scripts/docker-init.sh
+      - name: Probar API y operaciones en Docker
+        run: VILLA_TEST_MUTATIONS=1 node tests/docker-api-smoke.mjs
+      - name: Probar interfaz en Chrome sobre Apache y PostgreSQL
+        run: node tests/docker-browser.mjs
+      - name: Reiniciar y comprobar persistencia
+        run: |
+          docker compose restart
+          docker compose up --wait --wait-timeout 120
+          node tests/docker-api-smoke.mjs
+      - name: Validar configuracion de Apache y rol de base
+        run: |
+          docker compose exec -T web apache2ctl -t
+          test "$(docker compose exec -T db psql -U villa_admin -d proyecto_villa_horizonte -tAc "SELECT rolsuper OR rolcreatedb OR rolcreaterole FROM pg_roles WHERE rolname='villa_app'")" = "f"
+      - name: Diagnostico
+        if: failure()
+        run: docker compose ps && docker compose logs --tail=80
+      - name: Detener entorno de CI
+        if: always()
+        run: docker compose down

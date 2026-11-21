@@ -1,14 +1,17 @@
 {
   "name": "villa-horizonte-reservas",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
-  "description": "Frontend sin frameworks para la gestion de separaciones de lotes",
+  "description": "Sistema local de reserva de lotes con PHP y PostgreSQL",
   "type": "module",
   "scripts": {
     "dev": "node scripts/serve.mjs",
-    "start": "node scripts/serve.mjs"
+    "start": "node scripts/serve.mjs",
+    "test": "node --test tests/domain.test.mjs",
+    "test:integration": "node --test tests/api.integration.mjs",
+    "test:browser": "node scripts/test-browser.mjs",
+    "test:docker-sql": "node --test tests/docker-seed.integration.mjs",
+    "test:docker": "node tests/docker-api-smoke.mjs"
   },
-  "engines": {
-    "node": ">=22"
-  }
+  "engines": { "node": ">=22" }
 }
