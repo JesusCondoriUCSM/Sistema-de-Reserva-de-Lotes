@@ -1,0 +1,57 @@
+name: villa-horizonte
+services:
+  db:
+    build:
+      context: .
+      dockerfile: deploy/docker/db.Dockerfile
+    environment:
+      POSTGRES_DB: proyecto_villa_horizonte
+      POSTGRES_USER: villa_admin
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_admin_password
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+      TZ: America/Lima
+    secrets:
+      - db_admin_password
+      - db_app_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U villa_admin -d proyecto_villa_horizonte && psql -U villa_admin -d proyecto_villa_horizonte -tAc 'SELECT 1 FROM public.cliente LIMIT 1' >/dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+  web:
+    build:
+      context: .
+      dockerfile: deploy/docker/web.Dockerfile
+    ports:
+      - "127.0.0.1:${VILLA_HTTP_PORT:-8080}:80"
+    environment:
+      DB_HOST: db
+      DB_PORT: "5432"
+      DB_NAME: proyecto_villa_horizonte
+      DB_USER: villa_app
+      DB_PASSWORD_FILE: /run/secrets/db_app_password
+      APP_ENV: docker
+      TZ: America/Lima
+    secrets:
+      - db_app_password
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: [CMD, php, -r, "exit(@file_get_contents('http://127.0.0.1/api/health') === false ? 1 : 0);"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+volumes:
+  postgres_data:
+secrets:
+  db_admin_password:
+    file: ./.docker/secrets/db_admin_password.txt
+  db_app_password:
+    file: ./.docker/secrets/db_app_password.txt

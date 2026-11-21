@@ -1,0 +1,12 @@
+.git
+.runtime
+.docker
+tmp
+node_modules
+sql
+tests
+*.pdf
+.env
+.env.*
+*.log
+dist
