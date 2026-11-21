@@ -6,10 +6,10 @@ const routes = {
   inicio: ['Inicio', 'home', 'dashboard'], proyectos: ['Proyectos', 'grid', 'projects'],
   lotes: ['Lotes', 'grid', 'lots'], clientes: ['Clientes', 'users', 'clients'],
   asesores: ['Asesores', 'users', 'advisors'], separaciones: ['Separaciones', 'note', 'reservations'],
-  catalogos: ['Catálogos', 'grid', 'catalogs']
+  reportes: ['Reportes', 'chart', 'reports'], catalogos: ['Catálogos', 'grid', 'catalogs']
 };
 const app = document.getElementById('app');
-app.innerHTML = `<div class="demo-bar"><span class="dot"></span><strong>Entorno de demostración</strong><span>Datos ficticios · Sin conexión a PostgreSQL</span></div><div class="shell"><aside class="sidebar" id="sidebar"><a href="#/inicio" class="brand"><strong>Villa Horizonte</strong><small>Inmobiliaria · Gestión<br>interna</small></a><div class="menu-label">MENÚ PRINCIPAL</div><nav class="nav" aria-label="Menú principal">${Object.entries(routes).map(([key, [name, symbol]]) => `<a href="#/${key}" data-route="${key}">${icon(symbol)}<span>${name}</span></a>`).join('')}</nav><div class="sidebar-bottom"><p>Un lugar para gestionar<br>nuevas oportunidades.</p><div class="user"><span class="avatar">VH</span><div>Sesión de demostración<small>Gestión inmobiliaria</small></div></div></div></aside><div class="workspace"><header class="topbar"><button class="btn small mobile-toggle" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">${icon('menu')}</button><div><div class="eyebrow">SISTEMA DE RESERVAS DE LOTES</div><div class="topbar-title" id="topbar-title">Inicio</div></div><span class="date">${icon('clock')}${dateLabel(today())}</span></header><main id="main" class="content" tabindex="-1"></main><footer class="footer"><span>Villa Horizonte · Sistema interno de reservas de lotes</span><span>Frontend · Versión de demostración</span></footer></div></div>`;
+app.innerHTML = `<div class="demo-bar"><span class="dot"></span><strong>Sistema local</strong><span>PHP · PostgreSQL · Guardado en servidor</span></div><div class="shell"><aside class="sidebar" id="sidebar"><a href="#/inicio" class="brand"><strong>Villa Horizonte</strong><small>Inmobiliaria · Gestión<br>interna</small></a><div class="menu-label">MENÚ PRINCIPAL</div><nav class="nav" aria-label="Menú principal">${Object.entries(routes).map(([key, [name, symbol]]) => `<a href="#/${key}" data-route="${key}">${icon(symbol)}<span>${name}</span></a>`).join('')}</nav><div class="sidebar-bottom"><p>Un lugar para gestionar<br>nuevas oportunidades.</p><div class="user"><span class="avatar">VH</span><div>Gestión local<small>Gestión inmobiliaria</small></div></div></div></aside><div class="workspace"><header class="topbar"><button class="btn small mobile-toggle" aria-label="Abrir menú" aria-controls="sidebar" aria-expanded="false">${icon('menu')}</button><div><div class="eyebrow">SISTEMA DE RESERVAS DE LOTES</div><div class="topbar-title" id="topbar-title">Inicio</div></div><span class="date">${icon('clock')}${dateLabel(today())}</span></header><main id="main" class="content" tabindex="-1"></main><footer class="footer"><span>Villa Horizonte · Sistema interno de reservas de lotes</span><span>PHP · PostgreSQL</span></footer></div></div>`;
 const toggle = document.querySelector('.mobile-toggle');
 toggle.addEventListener('click', () => { const open = document.getElementById('sidebar').classList.toggle('open'); toggle.setAttribute('aria-expanded', String(open)); });
 let renderVersion = 0;
@@ -24,17 +24,19 @@ async function render() {
   document.getElementById('sidebar').classList.remove('open'); toggle.setAttribute('aria-expanded', 'false');
   const container = document.getElementById('main'); container.innerHTML = '<div class="loading" role="status">Cargando pantalla…</div>';
   try {
+    await repository.load();
     const view = await import(`./views/${routes[route][2]}.js`);
     if (version !== renderVersion) return;
     await view.mount(container, { repository, params, navigate, refresh: render });
   } catch (error) {
     if (version !== renderVersion) return;
-    container.innerHTML = `<div class="card card-body"><h1>No se pudo abrir la pantalla</h1><p>${e(error.message)}</p><a href="#/inicio">Volver al inicio</a></div>`;
+    container.innerHTML = `<div class="card card-body"><h1>No se pudo abrir la pantalla</h1><p>${e(error.message)}</p><div class="actions"><button class="btn" id="retry-load">Reintentar</button><a class="btn primary" href="/conexion.html">Configurar conexión</a></div></div>`;
+    container.querySelector('#retry-load').onclick = render;
     console.error(error);
   }
 }
 export function navigate(route) { const hash = `#/${route}`; if (location.hash === hash) render(); else location.hash = hash; }
 window.addEventListener('hashchange', render);
-window.addEventListener('storage', () => location.reload());
+window.addEventListener('focus', () => { if (!document.getElementById('modal').open && !document.querySelector('#reservation-form')) render(); });
 if (!location.hash) location.hash = '/inicio'; else render();
 if (repository.warning) toast(repository.warning, true);

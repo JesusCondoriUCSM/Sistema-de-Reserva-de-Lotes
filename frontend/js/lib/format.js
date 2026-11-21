@@ -7,8 +7,8 @@ export function today() {
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
 export function addDays(date, days) { const value = new Date(`${date}T12:00:00Z`); value.setUTCDate(value.getUTCDate() + days); return value.toISOString().slice(0, 10); }
-export function dateLabel(date) { if (!date) return '-'; const [y, m, d] = date.split('-'); return `${d}/${m}/${y}`; }
+export function dateLabel(date) { if (!date) return '—'; const [y, m, d] = date.split('-'); return `${d}/${m}/${y}`; }
 export const daysBetween = (start, end) => Math.round((Date.parse(`${end}T12:00:00Z`) - Date.parse(`${start}T12:00:00Z`)) / 86400000);
-export const fullName = person => person ? `${person.nombres} ${person.apellidos}` : '-';
+export const fullName = person => person ? `${person.nombres} ${person.apellidos}` : '—';
 export const lotLabel = lot => `L${String(lot.id_lote).padStart(3, '0')}`;
 export const normalizeSearch = value => String(value).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();

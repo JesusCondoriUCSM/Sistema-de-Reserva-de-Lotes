@@ -15,11 +15,11 @@ export function editRecord(type, key, context, onSaved = null, initial = {}) {
   const record = key === null ? null : data[type].find(x => String(x[keys[type]]) === String(key));
   if (key !== null && !record) { toast('El registro ya no existe.', true); return; }
   openModal(`${record ? 'Editar' : 'Registrar'} ${titles[type]}`, `<form><p class="help">* Campos obligatorios${record ? ' · El identificador no se modifica.' : ''}</p><div class="fields two">${recordFields(type, record || (Object.keys(initial).length ? initial : null), data, Boolean(record))}</div>${formActions(record ? 'Guardar cambios' : `Registrar ${titles[type]}`)}</form>`, {
-    onSubmit: async values => { const saved = repository.save(type, values, record ? record[keys[type]] : null); closeModal(); toast('Datos guardados correctamente.'); if (onSaved) onSaved(saved); else refresh(); }
+    onSubmit: async values => { const saved = await repository.save(type, values, record ? record[keys[type]] : null); closeModal(); toast('Datos guardados correctamente.'); if (onSaved) onSaved(saved); else refresh(); }
   });
 }
 export function deleteRecord(type, key, label, context) {
-  confirm(`Eliminar ${titles[type]}`, `¿Deseas eliminar ${label}? Solo se permitirá si no tiene operaciones o registros dependientes.`, () => { context.repository.remove(type, key); context.refresh(); toast('Registro eliminado.'); }, { label: 'Eliminar', danger: true });
+  confirm(`Eliminar ${titles[type]}`, `¿Deseas eliminar ${label}? Solo se permitirá si no tiene operaciones o registros dependientes.`, async () => { await context.repository.remove(type, key); context.refresh(); toast('Registro eliminado.'); }, { label: 'Eliminar', danger: true });
 }
 
 const configs = {

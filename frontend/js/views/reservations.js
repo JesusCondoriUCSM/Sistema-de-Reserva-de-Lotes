@@ -1,6 +1,6 @@
 import { heading, field, button, icon, table, badge, openModal, closeModal, formActions, confirm, toast, bindPages } from '../components/ui.js';
 import { editRecord } from '../components/crud.js';
-import { latestNote, reservationStatus } from '../services/demo-repository.js';
+import { latestNote, reservationStatus } from '../services/domain.js';
 import { escapeHTML as e, fullName, money, dateLabel, today, addDays, lotLabel } from '../lib/format.js';
 
 export function mount(container, context) {
@@ -31,7 +31,7 @@ export function mount(container, context) {
     container.querySelector('#clear').onclick = () => { filters = { project: '', block: '', status: '', client: '', advisor: '', from: '', to: '' }; page = 1; render(); };
     for (const action of ['release', 'complete']) container.querySelectorAll(`[data-${action}]`).forEach(el => el.onclick = () => {
       const lot = data.lote.find(x => x.id_lote === Number(el.dataset[action]));
-      confirm(action === 'release' ? 'Liberar lote vencido' : 'Concretar operación', `${lot.nombre_proyecto}, manzana ${lot.manzana}, lote ${lot.numero_lote}. ${action === 'release' ? 'Quedará Disponible y se conservará la nota de venta. El pago no se devuelve.' : 'Quedará Vendido. Esta acción no registra el pago total del terreno.'}`, () => { context.repository.changeReservation(lot.id_lote, action); render(); toast(action === 'release' ? 'Lote liberado correctamente.' : 'Operación concretada. El lote está Vendido.'); });
+      confirm(action === 'release' ? 'Liberar lote vencido' : 'Concretar operación', `${lot.nombre_proyecto}, manzana ${lot.manzana}, lote ${lot.numero_lote}. ${action === 'release' ? 'Quedará Disponible y se conservará la nota de venta. El pago no se devuelve.' : 'Quedará Vendido. Esta acción no registra el pago total del terreno.'}`, async () => { await context.repository.changeReservation(lot.id_lote, action); render(); toast(action === 'release' ? 'Lote liberado correctamente.' : 'Operación concretada. El lote está Vendido.'); });
     });
     bindPages(container, value => { page = value; render(); });
   };
@@ -79,8 +79,8 @@ function mountForm(container, context) {
     if (serie.length > 20) { errorArea.textContent = 'La serie y número completos admiten hasta 20 caracteres.'; return; }
     const lot = context.repository.snapshot().lote.find(x => x.id_lote === Number(values.id_lote));
     if (!lot || lot.estado !== 'Disponible') { errorArea.textContent = 'El lote ya no está disponible. Selecciona otro.'; populateLots(null); return; }
-    confirm('Confirmar separación', `${lot.nombre_proyecto} · Mz. ${lot.manzana} · Lote ${lot.numero_lote}. Cliente: ${fullName(selectedClient)}. Pago: ${money(100)}, ${values.forma_pago}. Nota ${serie}. Vence el ${dateLabel(addDays(today(), 8))}. El pago no es reembolsable.`, () => {
-      const note = context.repository.reserve({ ...values, serie_numero: serie });
+    confirm('Confirmar separación', `${lot.nombre_proyecto} · Mz. ${lot.manzana} · Lote ${lot.numero_lote}. Cliente: ${fullName(selectedClient)}. Pago: ${money(100)}, ${values.forma_pago}. Nota ${serie}. Vence el ${dateLabel(addDays(today(), 8))}. El pago no es reembolsable.`, async () => {
+      const note = await context.repository.reserve({ ...values, serie_numero: serie });
       context.navigate(`separaciones/nota/${encodeURIComponent(note)}`); toast(`Separación registrada. Nota ${note}. El lote está Separado.`);
     }, { label: 'Confirmar y registrar' });
   };
@@ -93,7 +93,7 @@ function mountNote(container, context) {
     const lot = data.lote.find(x => x.id_lote === note.id_lote); const client = data.cliente.find(x => x.dni_cliente === note.dni_cliente); const advisor = data.asesor.find(x => x.dni_asesor === note.dni_asesor);
     const rows = [['Serie y número', note.serie_numero], ['Fecha de emisión', dateLabel(note.fecha_emision)], ['Cliente', fullName(client)], ['DNI del cliente', note.dni_cliente], ['Asesor', fullName(advisor)], ['Proyecto', lot?.nombre_proyecto], ['Lote', `Manzana ${lot?.manzana} · Lote ${lot?.numero_lote}`], ['Forma de pago', note.forma_pago]];
     container.innerHTML = heading('Detalle de nota de venta', note.serie_numero) + `<div class="toolbar"><a class="btn" href="#/separaciones">← Volver a separaciones</a>${button(`${icon('edit')} Corregir nota`, 'id="edit-note"')}</div><section class="card"><div class="card-head"><h2>Nota de venta · Separación de lote</h2><span class="badge">Historial conservado</span></div><div class="card-body"><dl class="data-grid">${rows.map(([label, value]) => `<div><dt>${e(label)}</dt><dd>${e(value)}</dd></div>`).join('')}</dl></div></section>` + table(['Descripción', 'Cantidad', 'Unidad', 'Precio unitario', 'Total', 'Monto pagado'], [[e(note.descripcion), note.cantidad, e(note.unidad), money(note.precio_unitario), money(note.total_pagar), money(note.monto_pagado)]], { title: 'Detalle del pago' }) + `<div class="info">El pago de ${money(note.monto_pagado)} corresponde a la separación, no al precio total del terreno (${money(lot?.precio_venta || 0)}). La nota se conserva como historial. Solo se corrigen descripción y forma de pago.</div>`;
-    container.querySelector('#edit-note').onclick = () => openModal('Corregir nota de venta', `<form><div class="fields two">${field('forma_pago', 'Forma de pago', { value: note.forma_pago, options: [...new Set(['Efectivo', 'Transferencia', 'Depósito', note.forma_pago])].map(x => [x, x]) })}${field('descripcion', 'Descripción', { value: note.descripcion, type: 'textarea', full: true, attrs: 'maxlength="200"' })}</div>${formActions('Guardar corrección')}</form>`, { onSubmit: values => { context.repository.updateNote(note.serie_numero, values); closeModal(); render(); toast('Nota corregida correctamente.'); } });
+    container.querySelector('#edit-note').onclick = () => openModal('Corregir nota de venta', `<form><div class="fields two">${field('forma_pago', 'Forma de pago', { value: note.forma_pago, options: [...new Set(['Efectivo', 'Transferencia', 'Depósito', note.forma_pago])].map(x => [x, x]) })}${field('descripcion', 'Descripción', { value: note.descripcion, type: 'textarea', full: true, attrs: 'maxlength="200"' })}</div>${formActions('Guardar corrección')}</form>`, { onSubmit: async values => { await context.repository.updateNote(note.serie_numero, values); closeModal(); render(); toast('Nota corregida correctamente.'); } });
   };
   render();
 }
