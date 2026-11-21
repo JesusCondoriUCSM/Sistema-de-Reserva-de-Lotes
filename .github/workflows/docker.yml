@@ -16,10 +16,10 @@ jobs:
           node-version: '22'
       - name: Reglas de negocio
         run: npm test
-      - name: Construir e iniciar Docker con datos ficticios
+      - name: Construir e iniciar Docker sin datos precargados
         run: sh scripts/docker-init.sh
       - name: Probar API y operaciones en Docker
-        run: VILLA_TEST_MUTATIONS=1 node tests/docker-api-smoke.mjs
+        run: VILLA_EXPECT_EMPTY=1 VILLA_CHECK_IMAGE=1 VILLA_TEST_MUTATIONS=1 node tests/docker-api-smoke.mjs
       - name: Probar interfaz en Chrome sobre Apache y PostgreSQL
         run: node tests/docker-browser.mjs
       - name: Reiniciar y comprobar persistencia

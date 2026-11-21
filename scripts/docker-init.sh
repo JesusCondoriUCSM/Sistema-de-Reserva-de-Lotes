@@ -15,5 +15,7 @@ if [ ! -s .docker/secrets/db_admin_password.txt ] || [ ! -s .docker/secrets/db_a
     fi
   done
 fi
-docker compose config --quiet
-docker compose up --build --wait --wait-timeout 240
+set -- -f compose.yaml
+if [ -f .docker/compose.local.yaml ]; then set -- "$@" -f .docker/compose.local.yaml; fi
+docker compose "$@" config --quiet
+docker compose "$@" up --build --wait --wait-timeout 240

@@ -10,7 +10,9 @@ const command=async(operation,args)=>{
 };
 if(!data.cliente.some(x=>x.dni_cliente==='12345678'))await command('save',['cliente',{dni_cliente:'12345678',nombres:'Cliente prueba',apellidos:'Interfaz',direccion:'Direccion ficticia'}]);
 if(!data.asesor.some(x=>x.dni_asesor==='87654321'))await command('save',['asesor',{dni_asesor:'87654321',nombres:'Asesor prueba',apellidos:'Interfaz'}]);
-const lot=(await command('save',['lote',{nombre_proyecto:'Los Girasoles',numero_lote:901,calle:'Calle ficticia',manzana:Date.now().toString(36),tipo_ubicacion:'Esquina',area:120,precio_metro:450}])).result;
+const project=data.proyecto[0]?.nombre_proyecto;
+assert.ok(project,'La prueba de API debe crear primero un proyecto temporal.');
+const lot=(await command('save',['lote',{nombre_proyecto:project,numero_lote:901,calle:'Calle ficticia',manzana:Date.now().toString(36),tipo_ubicacion:'Esquina',area:120,precio_metro:450}])).result;
 const next=Math.max(0,...data.nota_venta.filter(x=>/^NV01-\d+$/.test(x.serie_numero)).map(x=>Number(x.serie_numero.split('-')[1])))+1;
 await browserSmoke(base,lot,null,`NV01-${String(next).padStart(6,'0')}`);
 console.log('Chrome: conexion automatica Docker, ocho modulos y registro completo de separacion verificados.');

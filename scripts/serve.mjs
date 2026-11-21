@@ -57,7 +57,7 @@ try {
     if (sql(['-tAc', "SELECT to_regclass('public.cliente') IS NOT NULL"]).trim() !== 't') {
       const schema = readFileSync(join(root, 'backend/schema.sql'), 'utf8').replace(/^BEGIN;|COMMIT;/gm, '');
       const routines = readFileSync(join(root, 'backend/routines.sql'), 'utf8').replace(/^BEGIN;|COMMIT;/gm, '');
-      const seed = process.env.APP_SEED_DEMO === '1' ? readFileSync(join(root, 'backend/seed-demo.sql'), 'utf8') : '';
+      const seed = process.env.APP_SEED_DEMO === '1' ? readFileSync(process.env.APP_TEST_SEED_FILE || join(root, '.docker/seed-demo.sql'), 'utf8') : '';
       sql([], { input: `BEGIN;\n${schema}\n${seed}\n${routines}\nCOMMIT;` });
       console.log('Base local creada. Registra catalogos, proyectos, clientes, asesores y lotes desde el sistema.');
     }
